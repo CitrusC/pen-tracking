@@ -16,13 +16,13 @@ def getOrientation(pts, img):
     cntr = (mean[0, 0], mean[0, 1])
 
     p1 = (
-    cntr[0] - 1.73 * eigenvectors[0, 0] * sqrt(eigenvalues[0, 0]),
-    cntr[1] - 1.73 * eigenvectors[0, 1] * sqrt(eigenvalues[0, 0]))
+    cntr[0] - 1.73205 * eigenvectors[0, 0] * sqrt(eigenvalues[0, 0]),
+    cntr[1] - 1.73205 * eigenvectors[0, 1] * sqrt(eigenvalues[0, 0]))
 
     p1_int = (int(p1[0]), int(p1[1]))
     cntr_int = (int(cntr[0]), int(cntr[1]))
-    cv2.circle(img, p1_int, 3, (0, 0, 255), 2)
-    cv2.line(img, cntr_int, p1_int, (0, 0, 255))
+    cv2.circle(img, p1_int, 3, (0, 0, 255), 3)
+    cv2.arrowedLine(img, p1_int, cntr_int, (0, 0, 255), 2)
 
     vector = (eigenvectors[0, 0], eigenvectors[0, 1])
     return p1, vector
@@ -52,8 +52,8 @@ def map(value, istart, istop, ostart, ostop):
 
 greenLower = (29, 35, 25)
 greenUpper = (64, 255, 255)
-penLength = 415
 resize = 2
+penLength = 830 // resize
 
 if __name__ == '__main__':
     # read video

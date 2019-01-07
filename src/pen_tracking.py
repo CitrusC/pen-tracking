@@ -20,7 +20,7 @@ def getOrientation(pts, img):
     p1 = (
     int(mean[0, 0] - 1.73 * eigenvectors[0, 0] * sqrt(eigenvalues[0, 0])), int(mean[0, 1] - 1.73 * eigenvectors[0, 1] * sqrt(eigenvalues[0, 0])))
     cv2.circle(img, p1, 3, (0, 0, 255), 2)
-    cv2.line(img, cntr, p1, (0, 0, 255))
+    cv2.arrowedLine(img, p1, cntr, (0, 0, 255), 2)
 
     angle = atan2(eigenvectors[0, 1], eigenvectors[0, 0])  # orientation in radians
 
@@ -36,7 +36,7 @@ greenUpper = (64, 255, 255)
 if __name__ == '__main__':
 
     # read video
-    # cap = cv2.VideoCapture("../video/Test/C0003.MP4")
+    # cap = cv2.VideoCapture("../video/Test/test.mp4")
     # cap = cv2.VideoCapture("../video/Test/IMG_1948.MOV")
     cap = cv2.VideoCapture("../video/Trimmed/Angle90_R.mov")
     ret, frame = cap.read()
