@@ -77,6 +77,7 @@ if __name__ == '__main__':
     frame_I = 0
     greenRange = (greenLower, greenUpper)
     result = np.zeros((frame_H, frame_W, 3), np.uint8)
+    z_img = np.zeros((300,frame_num, 3), np.uint8)
     run = False
     offset = np.array([0, 0, 0])
     z_threshold = 5
@@ -91,12 +92,14 @@ if __name__ == '__main__':
                 (int((nib[0] - offset[0]) * 8) + 100) % frame_H, (
                         int((nib[1] - offset[1]) * 8) + 100) % frame_W] = map(
                 abs((nib - offset)[2]), 0, z_threshold, 255, 0)
+        z_img[int((nib - offset)[2]*5 + 150)%300, frame_I] = 255
 
         print(
-            "{}/{} {} {} {}, {}".format(frame_I, frame_num, nib[0] - offset[0], nib[1] - offset[1], nib[2] - offset[2]))
+            "{}/{} {} {} {}".format(frame_I, frame_num, nib[0] - offset[0], nib[1] - offset[1], nib[2] - offset[2]))
         cv2.imshow("Frame Left", frameL)
         cv2.imshow("Frame Right", frameR)
         cv2.imshow("Result", result)
+        cv2.imshow("Z", z_img)
 
         if run and frame_I < frame_num:
             key = cv2.waitKey(1) & 0xFF
@@ -122,3 +125,4 @@ if __name__ == '__main__':
             offset = np.array(nib)
         elif (key == ord('c')):
             result = np.zeros((frame_H, frame_W, 3), np.uint8)
+            z_img = np.zeros((300,frame_num, 3), np.uint8)
