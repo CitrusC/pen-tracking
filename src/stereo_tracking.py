@@ -67,13 +67,15 @@ if __name__ == '__main__':
     retL, frameL = capL.read()
     retR, frameR = capR.read()
     frame_num = int(capL.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
-    frame_H = frameL.shape[0] // resize
-    frame_W = frameL.shape[1] // resize
+    frame_H = frameL.shape[0]
+    frame_W = frameL.shape[1]
     if (
             frame_num != int(capR.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
             or frame_H != frameR.shape[0]
             or frame_W != frameR.shape[1]):
         print("Warning: Inconsistent of stereo frames")
+    frame_H = frame_H // 2
+    frame_W = frame_W // 2
     frame_I = 0
     greenRange = (greenLower, greenUpper)
     result = np.zeros((frame_H, frame_W, 3), np.uint8)
