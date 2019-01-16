@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import cv2
 import numpy as np
-from math import atan2, cos, sin, sqrt, pi, degrees
+from math import sqrt
+from scipy.signal import hilbert
 
 
 def getOrientation(pts, img):
@@ -42,12 +43,10 @@ def calculateFrame(cap, frame_I, greenRange):
     return frame, position, vector
 
 
-def reconstruct_90(result, positionL, positionR, vectorL, vectorR, penLength):
-    position3D = (-positionR[0], -positionL[0], (positionL[1] + positionR[1]) / 2)
-    vector3D = (-vectorR[0], -vectorL[0], (vectorL[1] + vectorR[1]) / 2)
-    nib = (position3D[0] + vector3D[0] * penLength,
-           position3D[1] + vector3D[1] * penLength,
-           position3D[2] + vector3D[2] * penLength)
+def reconstruct_90(positionL, positionR, vectorL, vectorR, penLength):
+    position3D = np.array([-positionR[0], -positionL[0], (positionL[1] + positionR[1]) / 2])
+    vector3D = np.array([-vectorR[0], -vectorL[0], (vectorL[1] + vectorR[1]) / 2])
+    nib = position3D + vector3D * penLength
     return nib
 
 
@@ -78,36 +77,40 @@ if __name__ == '__main__':
     frame_W = frame_W // 2
     frame_I = 0
     greenRange = (greenLower, greenUpper)
+    nib_list = np.zeros((frame_num + 1, 3))
     result = np.zeros((frame_H, frame_W, 3), np.uint8)
-    z_img = np.zeros((300, frame_num + 1, 3), np.uint8)
+    z_img = np.zeros((640, frame_num + 1, 3), np.uint8)
     run = False
-    offset = np.array([0, 0, 0])
-    z_threshold = 5
+    is_finish = False
 
     while True:
         frameL, positionL, vectorL = calculateFrame(capL, frame_I, greenRange)
         frameR, positionR, vectorR = calculateFrame(capR, frame_I, greenRange)
-        nib = reconstruct_90(result, positionL, positionR, vectorL, vectorR, penLength)
+        nib_list[frame_I] = reconstruct_90(positionL, positionR, vectorL, vectorR, penLength)
 
-        if -z_threshold < (nib - offset)[2] < z_threshold:
-            result[
-                (int((nib[0] - offset[0]) * 8) + 100) % frame_H, (
-                        int((nib[1] - offset[1]) * 8) + 100) % frame_W] = map(
-                abs((nib - offset)[2]), 0, z_threshold, 255, 0)
-        z_img[int((nib - offset)[2]*5 + 50)%300, frame_I] = 255
+        z_img[int(nib_list[frame_I, 2] * 8) % 640, frame_I] = (255, 255, 255)
 
         print(
-            "{}/{} {} {} {}".format(frame_I, frame_num, nib[0] - offset[0], nib[1] - offset[1], nib[2] - offset[2]))
+            "{}/{} {}".format(frame_I, frame_num, nib_list[frame_I]))
         cv2.imshow("Frame Left", frameL)
         cv2.imshow("Frame Right", frameR)
-        cv2.imshow("Result", result)
+        # cv2.imshow("Result", result)
         cv2.imshow("Z", z_img)
 
-        if run and frame_I < frame_num:
-            key = cv2.waitKey(1) & 0xFF
-            frame_I += 1
+        if run:
+            if frame_I < frame_num:
+                key = cv2.waitKey(1) & 0xFF
+                frame_I += 1
+            else:
+                run = False
+                print("Finished pen tracking")
+                np.save("nib_list.npy", nib_list)
+                # analytic_signal = hilbert(nib_list[:, 2])
+                # for i in range(frame_num):
+                #     z_img[int(analytic_signal[i] * 8) % 640, i] = (0, 0, 255)
+                # cv2.imshow("Z", z_img)
+                key = cv2.waitKey(0)
         else:
-            run = False
             key = cv2.waitKey(0)
 
         if (key == ord('q')):
@@ -120,11 +123,6 @@ if __name__ == '__main__':
         elif (key == ord('s')):
             frame_I = max(frame_I - 1, 0)
         elif (key == ord('f')):
-            frame_I = min(frame_I + 100, frame_num - 1)
+            frame_I = min(frame_I + 50, frame_num - 1)
         elif (key == ord('a')):
-            frame_I = max(frame_I - 100, 0)
-        elif (key == ord('k')):
-            offset = np.array(nib)
-        elif (key == ord('c')):
-            result = np.zeros((frame_H, frame_W, 3), np.uint8)
-            z_img = np.zeros((300,frame_num, 3), np.uint8)
+            frame_I = max(frame_I - 50, 0)
