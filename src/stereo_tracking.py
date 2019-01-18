@@ -65,11 +65,11 @@ if __name__ == '__main__':
     capR = cv2.VideoCapture("../video/Trimmed/Angle90_L.mov")
     retL, frameL = capL.read()
     retR, frameR = capR.read()
-    frame_num = int(capL.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_num = int(capL.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
     frame_H = frameL.shape[0]
     frame_W = frameL.shape[1]
     if (
-            frame_num != int(capR.get(cv2.CAP_PROP_FRAME_COUNT))
+            frame_num != int(capR.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
             or frame_H != frameR.shape[0]
             or frame_W != frameR.shape[1]):
         print("Warning: Inconsistent of stereo frames")
@@ -77,9 +77,9 @@ if __name__ == '__main__':
     frame_W = frame_W // 2
     frame_I = 0
     greenRange = (greenLower, greenUpper)
-    nib_list = np.zeros((frame_num, 3))
+    nib_list = np.zeros((frame_num + 1, 3))
     result = np.zeros((frame_H, frame_W, 3), np.uint8)
-    z_img = np.zeros((640, frame_num, 3), np.uint8)
+    z_img = np.zeros((640, frame_num + 1, 3), np.uint8)
     run = False
     is_finish = False
 
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         cv2.imshow("Z", z_img)
 
         if run:
-            if frame_I < frame_num - 1:
+            if frame_I < frame_num:
                 key = cv2.waitKey(1) & 0xFF
                 frame_I += 1
             else:
