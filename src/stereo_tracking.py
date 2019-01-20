@@ -2,7 +2,10 @@
 import cv2
 import numpy as np
 from math import sqrt
-from scipy.signal import hilbert
+import matplotlib as mpl
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+
 
 
 def getOrientation(pts, img):
@@ -40,6 +43,7 @@ def calculateFrame(cap, frame_I, greenRange):
     green_mask = cv2.dilate(green_mask, None, iterations=2)
     c = np.where(green_mask == 255)
     position, vector = getOrientation(c, frame)
+    cv2.imshow("Result", green_mask)
     return frame, position, vector
 
 
@@ -47,7 +51,7 @@ def reconstruct_90(positionL, positionR, vectorL, vectorR, penLength):
     position3D = np.array([-positionR[0], -positionL[0], (positionL[1] + positionR[1]) / 2])
     vector3D = np.array([-vectorR[0], -vectorL[0], (vectorL[1] + vectorR[1]) / 2])
     nib = position3D + vector3D * penLength
-    return nib
+    return nib, position3D
 
 
 def map(value, istart, istop, ostart, ostop):
@@ -58,6 +62,7 @@ greenLower = (29, 35, 25)
 greenUpper = (64, 255, 255)
 resize = 2
 penLength = 830 // resize
+outputVideo = False
 
 if __name__ == '__main__':
     # read video
@@ -73,29 +78,50 @@ if __name__ == '__main__':
             or frame_H != frameR.shape[0]
             or frame_W != frameR.shape[1]):
         print("Warning: Inconsistent of stereo frames")
-    frame_H = frame_H // 2
-    frame_W = frame_W // 2
+    frame_H = frame_H // resize
+    frame_W = frame_W // resize
     frame_I = 0
     greenRange = (greenLower, greenUpper)
     nib_list = np.zeros((frame_num, 3))
     result = np.zeros((frame_H, frame_W, 3), np.uint8)
     z_img = np.zeros((640, frame_num, 3), np.uint8)
+    mpl.rcParams['legend.fontsize'] = 10
     run = False
     is_finish = False
+
+    mpl.rcParams['legend.fontsize'] = 10
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    if outputVideo:
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        outL = cv2.VideoWriter('../video/output_orig_L.avi', fourcc, 20.0, (frame_W, frame_H))
+        outR = cv2.VideoWriter('../video/output_orig_R.avi', fourcc, 20.0, (frame_W, frame_H))
+
 
     while True:
         frameL, positionL, vectorL = calculateFrame(capL, frame_I, greenRange)
         frameR, positionR, vectorR = calculateFrame(capR, frame_I, greenRange)
-        nib_list[frame_I] = reconstruct_90(positionL, positionR, vectorL, vectorR, penLength)
+        nib_list[frame_I], position = reconstruct_90(positionL, positionR, vectorL, vectorR, penLength)
 
         z_img[int(nib_list[frame_I, 2] * 8) % 640, frame_I] = (255, 255, 255)
 
         print(
             "{}/{} {}".format(frame_I, frame_num, nib_list[frame_I]))
+
+        line = np.array([nib_list[frame_I], position])
+        ax.plot(line[:, 0], line[:, 1], line[:, 2], label='nib')
+        ax.legend()
+        plt.pause(.01)
+
         cv2.imshow("Frame Left", frameL)
         cv2.imshow("Frame Right", frameR)
         # cv2.imshow("Result", result)
         cv2.imshow("Z", z_img)
+
+        if outputVideo:
+            outL.write(frameL)
+            outR.write(frameR)
 
         if run:
             if frame_I < frame_num - 1:
@@ -114,6 +140,11 @@ if __name__ == '__main__':
             key = cv2.waitKey(0)
 
         if (key == ord('q')):
+            capL.release()
+            capR.release()
+            if outputVideo:
+                outL.release()
+                outR.release()
             cv2.destroyAllWindows()
             break
         elif (key == ord('r')):
