@@ -119,3 +119,4 @@ video
 demo
 .idea
 .DS_Store
+*.npy
